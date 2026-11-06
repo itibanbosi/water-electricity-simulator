@@ -6,7 +6,7 @@
 
 ## 使い方
 
-電源電圧と抵抗1・2・3を画面で選びます。「日本語／English」のチェックを入れると日本語、外すと英語です。起動直後は日本語です。
+「回路の種類」で「抵抗1個」「直列抵抗2個」「並列抵抗2個」「直列＋並列」から1つ選び、電源電圧と使用する抵抗値を変更します。不要な抵抗は自動的にOPEN／0 Ωに設定され、操作できなくなります。使う抵抗値は正の値から選びます。USB接続中は実機の条件が優先され、回路選択は受信値に合わせて表示されます。「日本語／English」のチェックを入れると日本語、外すと英語です。起動直後は日本語です。
 
 回路の基本構成は **（抵抗1 ∥ 抵抗3）＋ 抵抗2** です。抵抗3は並列の追加枝、抵抗2は合流後の直列部分です。
 
@@ -56,7 +56,7 @@ An interactive teaching model of voltage, current, resistance, and heating power
 
 Uncheck the **日本語 / English** checkbox for English. Japanese is selected at startup.
 
-The circuit is **(R1 ∥ R3) + R2**.
+Choose **One resistor**, **Two in series**, **Two in parallel**, or **Series + parallel**. Unused resistors are automatically set to OPEN or 0 Ω. Adjust the active resistors using positive resistance values. While USB is connected, the circuit selection follows the device. The circuit is **(R1 ∥ R3) + R2**.
 
 | Circuit | R1 | R3 (parallel branch) | R2 (after merge) |
 | --- | --- | --- | --- |
