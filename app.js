@@ -10,7 +10,14 @@ const num=(n,d=2)=>Number.isFinite(n)?n.toFixed(d):'—';
 let statusMessage = $('usbStatus').textContent;
 let statusWarning = false;
 function status(message,warning=false){statusMessage=message;statusWarning=warning;$('usbStatus').textContent=translate(message);$('usbStatus').classList.toggle('warning',warning);}
-function lockControls(){for(const id of controls)$(id).disabled=!!port||connecting;$('connect').disabled=!!port||connecting;$('disconnect').disabled=!port;}
+const typeInputs=[...document.querySelectorAll('input[name="circuitType"]')];
+let screenType='mixed';
+const rememberedResistance={r1:20,r2:40,r3:20};
+function circuitType(s){const branches=Number(s.r1>=0)+Number(s.r3>=0);if(branches<=1)return s.r2===0||(s.r1===0||s.r3===0)?'single':'series';return s.r2===0?'parallel':'mixed'}
+function activeResistors(){if(port||connecting)return ['r1','r2','r3'];const branch=circuit.r1<0?'r3':'r1';return screenType==='single'?[circuit[branch]===0&&circuit.r2>0?'r2':branch]:screenType==='series'?[branch,'r2']:screenType==='parallel'?['r1','r3']:['r1','r2','r3']}
+function lockControls(){const device=!!port||connecting;const active=activeResistors();for(const id of controls){$(id).disabled=device||(id!=='voltage'&&!active.includes(id));if(id!=='voltage')for(const option of $(id).options){option.hidden=!device&&active.includes(id)&&+option.value<=0&&+option.value!==circuit[id];}}for(const radio of typeInputs)radio.disabled=device;$('connect').disabled=device||!('serial' in navigator)||!window.isSecureContext;$('disconnect').disabled=!port;}
+function chooseCircuit(type){if(port||connecting)return;for(const id of ['r1','r2','r3'])if(circuit[id]>0)rememberedResistance[id]=circuit[id];screenType=type;const r={...rememberedResistance};if(type==='single'){r.r2=0;r.r3=-1;}if(type==='series')r.r3=-1;if(type==='parallel')r.r2=0;circuit=calculate(circuit.voltage,r.r1,r.r2,r.r3);synchronize();lockControls();update();}
+for(const radio of typeInputs)radio.addEventListener('change',()=>{if(radio.checked)chooseCircuit(radio.value)});
 for(const id of ['r1','r2','r3'])for(const r of values){const o=document.createElement('option');o.value=r;o.textContent=labelR(r);$(id).append(o);}
 function synchronize(){
  for(const id of controls){
@@ -32,7 +39,7 @@ function synchronize(){
 function svgNode(tag,attrs,parent){const el=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,v);parent.append(el);return el;}
 function text(parent,x,y,value,attrs={}){const t=svgNode('text',{x,y,...attrs},parent);t.textContent=translate(value);return t;}
 function update(){
- const s=circuit;$('vLabel').textContent=num(s.voltage,1)+' V';$('vValue').textContent=num(s.voltage,1)+' V';
+ const s=circuit;for(const radio of typeInputs)radio.checked=radio.value===(port?circuitType(s):screenType);$('vLabel').textContent=num(s.voltage,1)+' V';$('vValue').textContent=num(s.voltage,1)+' V';
  $('rValue').textContent=s.closed?num(s.equivalent,1)+' Ω':'OPEN';
  $('parallelMeter').hidden = s.r1 < 0 || s.r3 < 0;
  if (s.r1 >= 0 && s.r3 >= 0) {
@@ -187,7 +194,7 @@ function animate(now){
 }
 for(const id of controls)$(id).addEventListener(id==='voltage'?'input':'change',()=>{if(port||connecting)return;circuit=calculate(+$('voltage').value,+$('r1').value,+$('r2').value,+$('r3').value);update();});
 $('pause').onclick=()=>{paused=!paused;$('pause').textContent=translate(paused?'表示を再生':'表示を一時停止');$('pause').setAttribute('aria-pressed',String(paused));};
-function acceptLine(line){const data=decode(line);if(!data)return false;circuit=data;receivedAt=Date.now();stale=false;status('実機連動モード・USB接続中・実機のつまみで操作');$('lastUpdate').textContent=translate('最終受信 ')+new Date(receivedAt).toLocaleTimeString(englishMode?'en-GB':'ja-JP');synchronize();update();return true;}
+function acceptLine(line){const data=decode(line);if(!data)return false;circuit=data;receivedAt=Date.now();stale=false;status('実機連動モード・USB接続中・実機のつまみで操作');$('lastUpdate').textContent=translate('最終受信 ')+new Date(receivedAt).toLocaleTimeString(englishMode?'en-GB':'ja-JP');synchronize();lockControls();update();return true;}
 async function receive(mySession,myPort){
  let buffer='';const decoder=new TextDecoder();
  try{
@@ -211,7 +218,7 @@ async function disconnect(message='画面操作モード・USBを切断しまし
  const old=port;if(!old)return;++session;port=null;stale=false;receivedAt=0;
  if(reader){try{await reader.cancel();}catch{}}
  try{await old.close();}catch{}
- lockControls();status(message);$('lastUpdate').textContent='';
+ screenType=circuitType(circuit);lockControls();update();status(message);$('lastUpdate').textContent='';
 }
 $('connect').onclick=connect;$('disconnect').onclick=()=>disconnect();
 setInterval(()=>{if(!port)return;if(!receivedAt){status('USB接続済み・データ待ち。ESP32の連動版プログラムを確認してください',true);return;}if(Date.now()-receivedAt>2000){stale=true;status('受信が止まっています。数値は最後に受信した値です。',true);}},500);
@@ -221,5 +228,5 @@ document.addEventListener('languagechange', () => {
  if (receivedAt) $('lastUpdate').textContent = translate('最終受信 ') + new Date(receivedAt).toLocaleTimeString(englishMode ? 'en-GB' : 'ja-JP');
  update();
 });
-synchronize();update();requestAnimationFrame(animate);
+synchronize();lockControls();update();requestAnimationFrame(animate);
 if(!('serial'in navigator)||!window.isSecureContext){$('connect').disabled=true;status('USB接続にはPC版Chrome / EdgeでHTTPSまたはlocalhostから開いてください。画面だけの操作はできます。',true);}
