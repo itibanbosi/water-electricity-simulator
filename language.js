@@ -1,5 +1,10 @@
 'use strict';
 const englishText = {
+ "回路の種類": "Circuit type",
+ "直列抵抗2個": "Two in series",
+ "並列抵抗2個": "Two in parallel",
+ "直列＋並列": "Series + parallel",
+ "画面上の「回路の種類」で1つ選ぶだけで、不要な抵抗はOPENまたは0 Ωに自動設定されます。使う抵抗の値を変更してください。USB接続中は実機の設定に合わせて選択が切り替わります。": "Choose one circuit type. Unused resistors are automatically set to OPEN or 0 Ω. Adjust the active resistors. While connected by USB, the selection follows the physical device.",
  "高さでわかる 電圧と電流 — USB連動版": "Voltage and Current through Height — USB Edition",
  "水と電気の実験室 / USB": "Water & Electricity Lab / USB",
  "高さでわかる 電圧と電流": "Voltage and Current through Height",
